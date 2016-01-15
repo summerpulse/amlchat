@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<RelativeLayout
+	  android:id="@+id/chat"
+	  android:layout_width="fill_parent"
+	  android:layout_height="fill_parent">
+		<SurfaceView
+		  android:id="@+id/videoInput"
+		  android:layout_alignParentBottom="true"
+		  android:layout_alignParentRight="true"
+		  android:layout_marginRight="10dp"
+		  android:layout_marginBottom="10dp"
+		  android:layout_width="160dp"
+		  android:layout_height="90dp"/>
+
+		<SurfaceView
+		  android:id="@+id/videoOutput"
+		  android:layout_alignParentTop="true"
+		  android:layout_alignParentRight="true"
+		  android:layout_marginRight="10dp"
+		  android:layout_marginTop="10dp"
+		  android:layout_width="160dp"
+		  android:layout_height="90dp" />
+	</RelativeLayout>
+
+	<SurfaceView
+		android:id="@+id/BGVideoSurface"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+	/>
+
+	<RelativeLayout
+	  android:layout_width="match_parent"
+	  android:layout_height="match_parent">
+
+		<LinearLayout 
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:orientation="vertical"
+			android:gravity="bottom">
+<!-- 
+			<CheckBox android:id="@+id/checkSwDecode"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_alignParentLeft="true"
+				android:layout_marginLeft="10dp"
+				android:text="@string/checkbox_sw_decode"/>
+ -->
+
+
+			<Button android:id="@+id/btnEncoderCapture"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_alignParentLeft="true"
+				android:layout_marginLeft="10dp" />
+
+			<Button
+			  android:id="@+id/debugBtn"
+			  android:layout_alignParentLeft="true"
+			  android:layout_marginLeft="10dp"
+			  android:layout_width="wrap_content"
+			  android:layout_height="wrap_content" />
+
+			<Button
+				android:id="@+id/encoderOptimizationsButton"
+				android:layout_alignParentLeft="true"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginLeft="10dp"
+				android:text="Encoder" />
+
+			<Button
+				android:id="@+id/startStopBtn"
+				android:layout_alignParentLeft="true"
+				android:layout_marginLeft="10dp"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content" />
+
+		</LinearLayout>
+
+		<TextView
+		  android:id="@+id/version"
+		  android:layout_alignParentTop="true"
+		  android:layout_alignParentLeft="true"
+		  android:layout_marginLeft="10dp"
+		  android:layout_marginTop="10dp"
+		  android:layout_width="wrap_content"
+		  android:layout_height="wrap_content"
+		  android:text="@string/app_version"
+		  android:textColor="#ff0000"/>
+
+		<LinearLayout
+		  android:id="@+id/frameStats"
+		  android:orientation="vertical"
+		  android:layout_below="@+id/version"
+		  android:layout_alignParentLeft="true"
+		  android:layout_marginLeft="10dp"
+		  android:layout_width="wrap_content"
+		  android:layout_height="wrap_content"/>
+	</RelativeLayout>
+
+</FrameLayout>

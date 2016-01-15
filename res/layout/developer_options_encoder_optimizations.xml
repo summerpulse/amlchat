@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/settings_fragments" 
+    android:background="@color/settings_row_background">
+
+    <RelativeLayout
+        android:id="@+id/rlDummy"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+        android:focusable="true" 
+        android:focusableInTouchMode="true" />
+
+    <ScrollView
+        android:id="@+id/scrollViewOptimizations"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:orientation="vertical" >
+
+        <RelativeLayout
+            android:id="@+id/rlOptimizationBack"
+            style="@style/settings_row"
+            android:layout_width="match_parent" >
+
+            <TextView
+                android:id="@+id/tvOptimizationBack"
+                style="@style/settings_row"
+                android:text="Close"
+                android:textColor="@color/settings_default"
+                android:textStyle="bold"
+                android:layout_height="fill_parent"
+                android:layout_width="fill_parent"
+                android:layout_gravity="center"
+                android:gravity="center_vertical|center_horizontal" />
+        </RelativeLayout>
+
+        <View style="@style/settings_divider"></View>
+
+        <RelativeLayout
+            android:id="@+id/rlOptimizationSPSPPS"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            style="@style/settings_row"
+            android:layout_gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/tvOptimizationSPSPPS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                style="@style/settings_textview"
+                android:textColor="@color/settings_default"
+                android:text="SPS PPS on IDR Frame"
+                android:layout_centerVertical="true" />
+
+            <CheckBox
+                android:id="@+id/cbOptimizationSPSPPS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:checked="false"
+                android:text="Enable"
+                android:scaleX="0.70"
+                android:scaleY="0.70"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+         </RelativeLayout>
+
+         <View style="@style/settings_divider"></View>
+
+         <RelativeLayout
+             android:id="@+id/rlOptimizationInfiniteIFrame"
+             android:layout_width="fill_parent"
+             android:layout_height="wrap_content"
+             style="@style/settings_row"
+             android:layout_gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/tvOptimizationInfiniteIFrame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                style="@style/settings_textview"
+                android:textColor="@color/settings_default"
+                android:text="Infinite IFrame "
+                android:layout_centerVertical="true" />
+
+            <CheckBox
+                android:id="@+id/cbOptimizationInfiniteIFrame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:checked="false"
+                android:text="Enable"
+                android:scaleX="0.70"
+                android:scaleY="0.70"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+        </RelativeLayout>
+
+        <View style="@style/settings_divider"></View>
+
+        <RelativeLayout
+            android:id="@+id/rlOptimizationMacroblockSlice"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            style="@style/settings_row"
+            android:layout_gravity="center_horizontal|center_vertical">
+
+            <TextView
+                android:id="@+id/tvOptimizationMacroblockSlice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                style="@style/settings_textview"
+                android:textColor="@color/settings_default"
+                android:text="Macroblock Slice Size"
+                android:layout_centerVertical="true" />
+
+            <CheckBox
+                android:id="@+id/cbOptimizationMacroblockSlice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:checked="false"
+                android:text="Enable"
+                android:scaleX="0.70"
+                android:scaleY="0.70"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+
+            <EditText
+                android:id="@+id/etOptimizationMacroblockSlice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:editable="false"
+                android:enabled="true"
+                android:inputType="number"
+                android:gravity="center_vertical"
+                android:layout_alignParentTop="true"
+                android:selectAllOnFocus="true"
+                android:layout_toLeftOf="@+id/cbOptimizationMacroblockSlice"
+                android:layout_toStartOf="@+id/cbOptimizationMacroblockSlice" />
+         </RelativeLayout>
+
+         <View style="@style/settings_divider"></View>
+
+         <RelativeLayout
+             android:id="@+id/rlOptimizationIntrarefresh"
+             android:layout_width="fill_parent"
+             android:layout_height="wrap_content"
+             style="@style/settings_row"
+             android:layout_gravity="center_horizontal" >
+
+             <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:divider="@null"
+                 android:orientation="horizontal" >
+
+                 <TextView
+                     android:id="@+id/tvOptimizationIntrarefresh"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center_vertical"
+                     style="@style/settings_textview"
+                     android:textColor="@color/settings_default"
+                     android:text="Intrarefresh MB " />
+
+                 <TextView
+                     android:id="@+id/tvOptimizationIntrarefreshRefresh"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center_vertical"
+                     style="@style/settings_textview"
+                     android:textColor="@color/settings_default"
+                     android:text="Refresh"
+                     android:layout_marginLeft="10dp" />
+
+                 <EditText
+                     android:id="@+id/etOptimizationIntrarefreshRefresh"
+                     android:layout_width="50dp"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center_vertical"
+                     android:editable="false"
+                     android:enabled="true"
+                     android:inputType="number"
+                     android:layout_alignParentEnd="false"
+                     android:gravity="center_vertical"
+                     android:selectAllOnFocus="true"
+                     android:layout_centerInParent="true"
+                     android:layout_alignParentRight="true" />
+
+                 <TextView
+                     android:id="@+id/tvOptimizationIntrarefreshOverlap"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center_vertical"
+                     style="@style/settings_textview"
+                     android:textColor="@color/settings_default"
+                     android:text="Overlap" />
+
+                 <EditText
+                     android:id="@+id/etOptimizationIntrarefreshOverlap"
+                     android:layout_width="50dp"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center_vertical"
+                     android:editable="false"
+                     android:enabled="true"
+                     android:inputType="number"
+                     android:selectAllOnFocus="true"
+                     android:gravity="center_vertical"
+                     android:layout_centerInParent="true" />
+
+                 <CheckBox
+                     android:id="@+id/cbOptimizationIntrarefresh"
+                     android:layout_width="wrap_content"
+                     android:layout_height="fill_parent"
+                     android:checked="false"
+                     android:text="Enable"
+                     android:scaleX="0.70"
+                     android:scaleY="0.70"
+                     android:gravity="center_vertical"
+                     android:layout_marginLeft="0dp" />
+
+        </LinearLayout>
+    </RelativeLayout>
+
+    <View style="@style/settings_divider"></View>
+
+    <RelativeLayout
+        android:id="@+id/rlOptimizationEncoderBitrate"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        style="@style/settings_row"
+        android:layout_gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/tvOptimizationEncoderBitrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                style="@style/settings_textview"
+                android:textColor="@color/settings_default"
+                android:text="Encoder Bitrate"
+                android:layout_centerVertical="true" />
+
+            <CheckBox
+                android:id="@+id/cbOptimizationEncoderBitrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:checked="false"
+                android:text="Enable"
+                android:scaleX="0.70"
+                android:scaleY="0.70"
+                android:layout_alignParentTop="false"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+
+            <EditText
+                android:id="@+id/etOptimizationEncoderBitrate"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:editable="false"
+                android:enabled="true"
+                android:inputType="number"
+                android:selectAllOnFocus="true"
+                android:gravity="center_vertical"
+                android:layout_alignParentTop="true"
+                android:layout_toLeftOf="@+id/cbOptimizationEncoderBitrate"
+                android:layout_toStartOf="@+id/cbOptimizationEncoderBitrate" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Now"
+                android:id="@+id/bOptimizationEncoderBitrate"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/etOptimizationEncoderBitrate"
+                android:layout_toStartOf="@+id/etOptimizationEncoderBitrate"
+                android:clickable="true"
+                style="@android:style/TextAppearance.DeviceDefault.Widget.Button" />
+    </RelativeLayout>
+
+    </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VideoPlayer</string>
+    <string name="app_name">AmlChat</string>
     <string name="app_version"></string>
     <string name="checkbox_sw_decode">SW Decode</string>
 </resources>

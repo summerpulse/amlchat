@@ -3,6 +3,7 @@ package com.infocus.VideoPlayer;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -73,6 +75,13 @@ public class VideoPlayerActivity extends Activity implements
 	private LinearLayout mStatsFrame;
 	private Button mDebugLogBtn;
 	private MediaPlayerWrapper mPlayerWrapper;
+	private String[] mSourceList = {"http://192.168.11.2:8080/hls/vod/720p/sen/sen.m3u8",
+			"http://192.168.11.2:8080/hls/vod/1080p/frozen/frozen.m3u8",
+			"http://192.168.11.2:8080/hls/vod/480p/audi/audi.m3u8"
+			};
+	private int mSourceListSize = mSourceList.length;
+	private int mSourceIdx = 0;
+	private String mSource = mSourceList[mSourceIdx];
 
 	/** Called when the activity is first created. */
 	@Override
@@ -132,6 +141,67 @@ public class VideoPlayerActivity extends Activity implements
 		super.onDestroy();
 	}
 
+	@Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // TODO Auto-generated method stub
+        Log.d(TAG, "onKeyDown1");
+        if(keyCode==KeyEvent.KEYCODE_BACK){
+            //弹出确定退出对话框
+            new AlertDialog.Builder(this)
+            .setTitle("退出")
+            .setMessage("确定退出吗？")
+            .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // TODO Auto-generated method stub
+                    Intent exit = new Intent(Intent.ACTION_MAIN);
+                    exit.addCategory(Intent.CATEGORY_HOME);
+                    exit.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(exit);
+                    System.exit(0);
+                }
+            })
+            .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // TODO Auto-generated method stub
+                    dialog.cancel();
+                }
+            })
+            .show();
+            //这里不需要执行父类的点击事件，所以直接return
+            return true;
+        }
+        Log.d(TAG, "onKeyDown2");
+        if(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT) 
+        {
+        	mSourceIdx++;
+        	if (mSourceIdx>=mSourceListSize)
+        		mSourceIdx = 0;
+        	mSource = mSourceList[mSourceIdx];
+        }
+        if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT)
+        {
+        	mSourceIdx--;
+        	if (mSourceIdx<0)
+        		mSourceIdx = mSourceListSize - 1 ;
+        	mSource = mSourceList[mSourceIdx];
+        }
+        if (keyCode==KeyEvent.KEYCODE_DPAD_LEFT || keyCode==KeyEvent.KEYCODE_DPAD_RIGHT)
+        {
+	    	mPlayerWrapper.stop();
+			String source = SystemProperties.get("media.demo.uri", null);
+			if (source == null)
+				source = mSourceList[mSourceIdx];
+	    	mPlayerWrapper.setmSource(source);
+	    	mPlayerWrapper.start();
+        }
+        //继续执行父类的其他点击事件
+        return super.onKeyDown(keyCode, event);
+    }
+
 	public VideoDeviceInputImpl getVideoInputDevice()
 	{
 		return mVideoInput;
@@ -161,8 +231,9 @@ public class VideoPlayerActivity extends Activity implements
 				// if (mResumed)
 				// {
 				// Log.d(TAG, "resuming, try to start a NEW mEncDecThread");
-				String source = SystemProperties.get("media.demo.uri",
-						"/sdcard/demo.mp4");
+				String source = SystemProperties.get("media.demo.uri", null);
+				if (source == null)
+					source = mSourceList[0];
 				Log.d(TAG, "MediaPlayerThread source=" + source);
 				mPlayerWrapper = new MediaPlayerWrapper(mBGVideoView, source);
 				mPlayerWrapper.start();

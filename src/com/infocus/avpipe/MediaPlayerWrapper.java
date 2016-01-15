@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.SurfaceView;
 
@@ -13,22 +14,26 @@ public class MediaPlayerWrapper{
 	private SurfaceView mSurfaceView = null;
 	private final String TAG = "VideoPlayerThread";
 	private String mSource;
+	private int mStatus;
+	public static final int STATUS_STOPPED=0;
+	public static final int STATUS_STARTED=1;
+	
 
 	public MediaPlayerWrapper(SurfaceView surfaceView, String source) {
-		this.mSurfaceView = surfaceView;
-		this.mSource = source;
-	}
-
-	public void start() 
-	{
+		mSurfaceView = surfaceView;
+		mSource = source;
+		mStatus = STATUS_STOPPED;
 		mMediaPlayer = new MediaPlayer();
-		mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {  
-		    @Override  
-		    public void onCompletion(MediaPlayer mp) {
+		mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+		    @Override
+		    public void onCompletion(MediaPlayer mp) 
+		    {
 		    	mMediaPlayer.stop();
 		    	mMediaPlayer.reset();
 		    	try
 				{
+		    		mSource  = SystemProperties.get("media.demo.uri", "/sdcard/demo.mp4");
+					Log.d(TAG, "MediaPlayerThread source=" + mSource);
 					mMediaPlayer.setDataSource(mSource);
 				} catch (IllegalArgumentException e)
 				{
@@ -60,8 +65,15 @@ public class MediaPlayerWrapper{
 					e.printStackTrace();
 				}
 		    	mMediaPlayer.start();
+		    	mStatus = STATUS_STARTED;
 		    }  
 		});
+	}
+
+	public void start() 
+	{
+		if(mStatus==STATUS_STARTED)
+			return;
 		// int idx = Integer.parseInt(System.getProperty("media.demo.hls.index",
 		// "0"));
 		// Log.d(TAG, "idx="+idx+", source="+sourceList[idx]);
@@ -98,8 +110,8 @@ public class MediaPlayerWrapper{
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
-		catch (IOException e) 
+		}
+		catch (IOException e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -111,12 +123,23 @@ public class MediaPlayerWrapper{
 		mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		mMediaPlayer.start();
 		Log.d(TAG, "Player started");
+		mStatus = STATUS_STARTED;
 	}
 	public void stop()
 	{
+		if(mStatus==STATUS_STOPPED)
+			return;
 		mMediaPlayer.stop();
 		mMediaPlayer.reset();
-		mMediaPlayer.release();
 		Log.d(TAG, "Player stopped");
+		mStatus = STATUS_STOPPED;
+	}
+
+	public String getmSource() {
+		return mSource;
+	}
+
+	public void setmSource(String mSource) {
+		this.mSource = mSource;
 	}
 }

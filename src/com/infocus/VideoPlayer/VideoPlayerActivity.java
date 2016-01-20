@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.os.Bundle;
+import android.os.ConditionVariable;
 import android.os.Debug;
 import android.os.SystemProperties;
 import android.util.Log;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,8 +30,11 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 
+
+
 import com.infocus.avpipe.AVTypes;
 import com.infocus.avpipe.IVideoDevice;
+import com.infocus.avpipe.LocalAudioLoopThread;
 import com.infocus.avpipe.MediaPlayerWrapper;
 import com.infocus.avpipe.ReadRequest;
 import com.infocus.avpipe.VideoCapture;
@@ -75,13 +80,17 @@ public class VideoPlayerActivity extends Activity implements
 	private LinearLayout mStatsFrame;
 	private Button mDebugLogBtn;
 	private MediaPlayerWrapper mPlayerWrapper;
-	private String[] mSourceList = {"http://192.168.11.2:8080/hls/vod/720p/sen/sen.m3u8",
+	private String[] mSourceList = {
+			"http://192.168.11.2:8080/hls/vod/720p/gopro/gopro.m3u8",
 			"http://192.168.11.2:8080/hls/vod/1080p/frozen/frozen.m3u8",
 			"http://192.168.11.2:8080/hls/vod/480p/audi/audi.m3u8"
 			};
 	private int mSourceListSize = mSourceList.length;
 	private int mSourceIdx = 0;
 	private String mSource = mSourceList[mSourceIdx];
+	private LocalAudioLoopThread mAudioLoop;
+	private SeekBar mVolumeControl;
+	public static ConditionVariable sCv = new ConditionVariable();
 
 	/** Called when the activity is first created. */
 	@Override
@@ -108,6 +117,8 @@ public class VideoPlayerActivity extends Activity implements
 		// runVideoThread()
 
 		loadResources();
+		mAudioLoop = new LocalAudioLoopThread();
+		sCv.close();
 	}
 
 	@Override
@@ -236,7 +247,7 @@ public class VideoPlayerActivity extends Activity implements
 					source = mSourceList[0];
 				Log.d(TAG, "MediaPlayerThread source=" + source);
 				mPlayerWrapper = new MediaPlayerWrapper(mBGVideoView, source);
-				mPlayerWrapper.start();
+				//mPlayerWrapper.start();
 				// }
 			}
 
@@ -246,6 +257,34 @@ public class VideoPlayerActivity extends Activity implements
 				Log.d(TAG, "mBGVideoView surfaceDestroyed");
 			}
 		});
+		mVolumeControl = (SeekBar) this.findViewById(R.id.skbVolume);
+		mVolumeControl.setMax(100);// 音量调节的极限
+		mVolumeControl.setProgress(70);// 设置seekbar的位置值
+		
+		mVolumeControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+		{
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar)
+			{
+				float vol = (float) (seekBar.getProgress())
+						/ (float) (seekBar.getMax());
+				mAudioLoop.setmMicVolume(vol);// 设置音量
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar)
+			{
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void onProgressChanged(SeekBar seekBar,
+					int progress, boolean fromUser)
+			{
+				// TODO Auto-generated method stub
+			}
+		});
+		
 		mStatsFrame = (LinearLayout) findViewById(R.id.frameStats);
 		mDecodeSfc = (SurfaceView) findViewById(R.id.videoOutput);
 		mPreviewSfc = (SurfaceView) findViewById(R.id.videoInput);
@@ -332,16 +371,31 @@ public class VideoPlayerActivity extends Activity implements
 			@Override
 			public void onClick(View v)
 			{
-				if (mIsStarted)
+				if (mIsStarted == true)
 				{
 					mStartStopButton.setText("Start");
 					//mSwDecodeCheckBox.setClickable(true);
 					stopVideo();
+					mAudioLoop.setRecording(false);
 				} else
 				{
 					mStartStopButton.setText("Stop");
 					//mSwDecodeCheckBox.setClickable(false);
 					showResolutionOptions();
+					mAudioLoop.setRecording(true);
+					Log.d(TAG, "local audio loop started");
+					new Thread(new Runnable(){
+						@Override
+						public void run()
+						{
+							// TODO Auto-generated method stub
+							Log.d(TAG, "wating for sVc to open");
+							sCv.block();
+							Log.d(TAG, "sVc opened");
+							mPlayerWrapper.start();
+						}
+					}).start();
+					mAudioLoop.start();
 				}
 				updateStats();
 			}

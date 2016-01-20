@@ -12,7 +12,7 @@ public class MediaPlayerWrapper{
 	private MediaPlayer mMediaPlayer = null;
 	// private SurfaceView mSurfaceView = null ;
 	private SurfaceView mSurfaceView = null;
-	private final String TAG = "VideoPlayerThread";
+	private final String TAG = "MediaPlayerWrapper";
 	private String mSource;
 	private int mStatus;
 	public static final int STATUS_STOPPED=0;

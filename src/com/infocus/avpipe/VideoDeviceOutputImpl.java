@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.http.util.ByteArrayBuffer;
 
+import com.infocus.VideoPlayer.VideoPlayerActivity;
+
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
@@ -116,11 +118,13 @@ public class VideoDeviceOutputImpl implements IVideoDevice {
         // (byte) 0x8B, (byte) 0x95, 0x02, (byte) 0x83, (byte) 0xF2, 0x00,
         // 0x00, 0x00, 0x01, 0x28, (byte) 0xDE, 0x03, 0x18, (byte) 0x80 };
         ByteBuffer datBuffer = ByteBuffer.wrap(buffer.array());
-        if (mSoftDecode) {
-          mDecodeMediaCodec = MediaCodec.createByCodecName("OMX.google.h264.decoder");
-        } else {
+//        if (mSoftDecode) {
+//          mDecodeMediaCodec = MediaCodec.createByCodecName("OMX.google.h264.decoder");
+//        } else {
           mDecodeMediaCodec = MediaCodec.createDecoderByType(vfi.getMimeType());
-        }
+//        }
+        VideoPlayerActivity.sCv.open();
+        Log.d(TAG, "open sVc for others");
         MediaFormat format = MediaFormat.createVideoFormat(vfi.getMimeType(), vfi.getWidth(), vfi.getHeight());
         format.setByteBuffer("csd-0", datBuffer);
         if (DEBUG) {

@@ -50,7 +50,11 @@
 				android:text="@string/checkbox_sw_decode"/>
  -->
 
-
+		    <SeekBar 
+				android:id="@+id/skbVolume"  
+		        android:layout_height="wrap_content"
+		        android:layout_width="match_parent">
+		    </SeekBar>  
 			<Button android:id="@+id/btnEncoderCapture"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"

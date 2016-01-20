@@ -193,7 +193,7 @@ public class VideoPlayerActivity extends Activity implements
         {
 	    	mPlayerWrapper.stop();
 			String source = SystemProperties.get("media.demo.uri", null);
-			if (source == null)
+			if (source == null || source.equals(""))
 				source = mSourceList[mSourceIdx];
 	    	mPlayerWrapper.setmSource(source);
 	    	mPlayerWrapper.start();
@@ -232,7 +232,7 @@ public class VideoPlayerActivity extends Activity implements
 				// {
 				// Log.d(TAG, "resuming, try to start a NEW mEncDecThread");
 				String source = SystemProperties.get("media.demo.uri", null);
-				if (source == null)
+				if (source == null || source.equals(""))
 					source = mSourceList[0];
 				Log.d(TAG, "MediaPlayerThread source=" + source);
 				mPlayerWrapper = new MediaPlayerWrapper(mBGVideoView, source);
@@ -496,6 +496,9 @@ public class VideoPlayerActivity extends Activity implements
 
 					addLineToStats("Video Info: " + videoFormat + " at "
 							+ (mVideoFormatInfo.getBitRate() / 1000) + "kbps");
+					String showStats = SystemProperties.get("media.demo.showstats", null);
+					if (showStats == null || showStats.equals(""))
+						return;
 					addLineToStats("Time Statistics (camera / endoder / decoder / total):");
 					addLineToStats("First Frame Delay = "
 							+ Integer.toString(getStartupLatencyCam()) + "ms"

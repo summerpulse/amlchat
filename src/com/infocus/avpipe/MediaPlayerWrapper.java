@@ -32,7 +32,9 @@ public class MediaPlayerWrapper{
 		    	mMediaPlayer.reset();
 		    	try
 				{
-		    		mSource  = SystemProperties.get("media.demo.uri", "/sdcard/demo.mp4");
+		    		String tmpSource = SystemProperties.get("media.demo.uri", null);
+		    		if(tmpSource != null && !tmpSource.equals(""))
+		    			mSource = tmpSource;
 					Log.d(TAG, "MediaPlayerThread source=" + mSource);
 					mMediaPlayer.setDataSource(mSource);
 				} catch (IllegalArgumentException e)

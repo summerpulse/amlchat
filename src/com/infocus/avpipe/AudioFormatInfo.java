@@ -23,13 +23,13 @@ import android.util.Log;
  */
 public class AudioFormatInfo {
     private final String TAG = "AudioFormatInfo";
-    // 采样�?
+    // 采样
     private int sampleRate = 8000;
     // 声道
     private int channel = AudioFormat.CHANNEL_IN_MONO;
     // 编码格式
     private int format = AudioFormat.ENCODING_PCM_16BIT;
-    // 音频�?
+    // 音频
     private int source = AudioSource.VOICE_COMMUNICATION;
 
     public AudioFormatInfo(int numChannels, int sampleRate, int bitsPerSample) {

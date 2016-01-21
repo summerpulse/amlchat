@@ -13,8 +13,8 @@
 		  android:layout_alignParentRight="true"
 		  android:layout_marginRight="10dp"
 		  android:layout_marginBottom="10dp"
-		  android:layout_width="160dp"
-		  android:layout_height="90dp"/>
+		  android:layout_width="320dp"
+		  android:layout_height="180dp"/>
 
 		<SurfaceView
 		  android:id="@+id/videoOutput"
@@ -22,11 +22,11 @@
 		  android:layout_alignParentRight="true"
 		  android:layout_marginRight="10dp"
 		  android:layout_marginTop="10dp"
-		  android:layout_width="160dp"
-		  android:layout_height="90dp" />
+		  android:layout_width="320dp"
+		  android:layout_height="180dp" />
 	</RelativeLayout>
 
-	<SurfaceView
+	<com.google.android.exoplayer.VideoSurfaceView
 		android:id="@+id/BGVideoSurface"
 		android:layout_width="fill_parent"
 		android:layout_height="fill_parent"

@@ -30,6 +30,7 @@ import com.infocus.VideoPlayer.VideoPlayerActivity;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceView;
@@ -118,13 +119,31 @@ public class VideoDeviceOutputImpl implements IVideoDevice {
         // (byte) 0x8B, (byte) 0x95, 0x02, (byte) 0x83, (byte) 0xF2, 0x00,
         // 0x00, 0x00, 0x01, 0x28, (byte) 0xDE, 0x03, 0x18, (byte) 0x80 };
         ByteBuffer datBuffer = ByteBuffer.wrap(buffer.array());
+        String softDecode = SystemProperties.get("media.amlchat.softdecoder", "true");
+        
+        if(softDecode.equals("false") || softDecode.equals("0"))
+        	mSoftDecode = false;
+        if(softDecode.equals("true") || softDecode.equals("1") || softDecode.equals(""))
+        	mSoftDecode = true;
+
 //        if (mSoftDecode) {
-//          mDecodeMediaCodec = MediaCodec.createByCodecName("OMX.google.h264.decoder");
+//        	Log.d(TAG, "amlchat using software decoder");
+//        	mDecodeMediaCodec = MediaCodec.createByCodecName("OMX.google.h264.decoder");
 //        } else {
-          mDecodeMediaCodec = MediaCodec.createDecoderByType(vfi.getMimeType());
+//        	Log.d(TAG, "amlchat using hardware decoder");
+		try
+		{
+        	mDecodeMediaCodec = MediaCodec.createDecoderByType(vfi.getMimeType());
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		
 //        }
+        Log.d(TAG, "chat decoder is:"+mDecodeMediaCodec.getName());
         VideoPlayerActivity.sCv.open();
-        Log.d(TAG, "open sVc for others");
+        Log.d(TAG, "chat decoder created, open sCv for others");
         MediaFormat format = MediaFormat.createVideoFormat(vfi.getMimeType(), vfi.getWidth(), vfi.getHeight());
         format.setByteBuffer("csd-0", datBuffer);
         if (DEBUG) {

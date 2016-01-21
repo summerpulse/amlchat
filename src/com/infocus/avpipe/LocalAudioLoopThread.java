@@ -11,13 +11,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
-
+import android.os.SystemProperties;
 public class LocalAudioLoopThread extends Thread
 {
 	/** Called when the activity is first created. */
 //	Button btnRecord, btnStop, btnExit;
-//	SeekBar skbVolume;// µ÷½ÚÒôÁ¿
-	boolean isRecording = false;// ÊÇ·ñÂ¼·ÅµÄ±ê¼Ç
+//	SeekBar skbVolume;// è°ƒèŠ‚éŸ³é‡
+	boolean isRecording = false;// æ˜¯å¦å½•æ”¾çš„æ ‡è®°
 	static final int frequency = 44100;
 	static final int channelConfiguration = AudioFormat.CHANNEL_CONFIGURATION_MONO;
 	static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
@@ -50,7 +50,8 @@ public class LocalAudioLoopThread extends Thread
 		audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, frequency,
 				channelConfiguration, audioEncoding, recBufSize);
 
-		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, frequency,
+		SystemProperties.set("audio.output.double_output", "1");
+		audioTrack = new AudioTrack(AudioManager.STREAM_USB_HEADSET, frequency,
 				channelConfiguration, audioEncoding, playBufSize,
 				AudioTrack.MODE_STREAM);
 	}
@@ -66,10 +67,10 @@ public class LocalAudioLoopThread extends Thread
 	// btnExit.setOnClickListener(new ClickEvent());
 	//
 	// skbVolume = (SeekBar) this.findViewById(R.id.skbVolume);
-	// skbVolume.setMax(100);// ÒôÁ¿µ÷½ÚµÄ¼«ÏŞ
-	// skbVolume.setProgress(70);// ÉèÖÃseekbarµÄÎ»ÖÃÖµ
+	// skbVolume.setMax(100);// éŸ³é‡è°ƒèŠ‚çš„æé™
+	// skbVolume.setProgress(70);// è®¾ç½®seekbarçš„ä½ç½®å€¼
 	//
-	// audioTrack.setStereoVolume(0.7f, 0.7f);// ÉèÖÃµ±Ç°ÒôÁ¿´óĞ¡
+	// audioTrack.setStereoVolume(0.7f, 0.7f);// è®¾ç½®å½“å‰éŸ³é‡å¤§å°
 	// skbVolume.setOnSeekBarChangeListener(new
 	// SeekBar.OnSeekBarChangeListener()
 	// {
@@ -78,7 +79,7 @@ public class LocalAudioLoopThread extends Thread
 	// {
 	// float vol = (float) (seekBar.getProgress())
 	// / (float) (seekBar.getMax());
-	// audioTrack.setStereoVolume(vol, vol);// ÉèÖÃÒôÁ¿
+	// audioTrack.setStereoVolume(vol, vol);// è®¾ç½®éŸ³é‡
 	// }
 	//
 	// @Override
@@ -112,7 +113,7 @@ public class LocalAudioLoopThread extends Thread
 	// if (v == btnRecord)
 	// {
 	// isRecording = true;
-	// new RecordPlayThread().start();// ¿ªÒ»ÌõÏß³Ì±ßÂ¼±ß·Å
+	// new RecordPlayThread().start();// å¼€ä¸€æ¡çº¿ç¨‹è¾¹å½•è¾¹æ”¾
 	// } else if (v == btnStop)
 	// {
 	// isRecording = false;
@@ -128,21 +129,23 @@ public class LocalAudioLoopThread extends Thread
 		try
 		{
 			byte[] buffer = new byte[recBufSize];
-			audioRecord.startRecording();// ¿ªÊ¼Â¼ÖÆ
-			audioTrack.play();// ¿ªÊ¼²¥·Å
+			audioRecord.startRecording();// å¼€å§‹å½•åˆ¶
+			audioTrack.play();// å¼€å§‹æ’­æ”¾
 			Log.d(TAG, "local audio loop thread started");
 			while (isRecording)
 			{
-				// ´ÓMIC±£´æÊı¾İµ½»º³åÇø
+				// ä»MICä¿å­˜æ•°æ®åˆ°ç¼“å†²åŒº
 				int bufferReadResult = audioRecord.read(buffer, 0, recBufSize);
 
 				byte[] tmpBuf = new byte[bufferReadResult];
 				System.arraycopy(buffer, 0, tmpBuf, 0, bufferReadResult);
-				// Ğ´ÈëÊı¾İ¼´²¥·Å
+				// å†™å…¥æ•°æ®å³æ’­æ”¾
 				audioTrack.write(tmpBuf, 0, tmpBuf.length);
 			}
 			audioTrack.stop();
+			audioTrack.release();
 			audioRecord.stop();
+			audioRecord.release();
 		} catch (Throwable t)
 		{
 			// Toast.makeText(ZhuTingQiActivity.this, t.getMessage(), 1000);

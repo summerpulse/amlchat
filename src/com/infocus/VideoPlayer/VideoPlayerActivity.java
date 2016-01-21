@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.Debug;
@@ -26,12 +27,23 @@ import android.widget.Toast;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 
-
-
+import com.google.android.exoplayer.ExoPlayer;
+import com.google.android.exoplayer.VideoSurfaceView;
+import com.google.android.exoplayer.demo.DemoUtil;
+import com.google.android.exoplayer.demo.SmoothStreamingTestMediaDrmCallback;
+import com.google.android.exoplayer.demo.WidevineTestMediaDrmCallback;
+import com.google.android.exoplayer.demo.player.DashRendererBuilder;
+import com.google.android.exoplayer.demo.player.DefaultRendererBuilder;
+import com.google.android.exoplayer.demo.player.DemoPlayer;
+import com.google.android.exoplayer.demo.player.HlsRendererBuilder;
+import com.google.android.exoplayer.demo.player.SmoothStreamingRendererBuilder;
+import com.google.android.exoplayer.demo.player.UnsupportedDrmException;
+import com.google.android.exoplayer.demo.player.DemoPlayer.RendererBuilder;
 import com.infocus.avpipe.AVTypes;
 import com.infocus.avpipe.IVideoDevice;
 import com.infocus.avpipe.LocalAudioLoopThread;
@@ -47,7 +59,7 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 
 public class VideoPlayerActivity extends Activity implements
-		VideoDeviceInputImpl.EncodedFrameListener
+		VideoDeviceInputImpl.EncodedFrameListener, DemoPlayer.Listener
 {
 	private static final String TAG = "VideoPlayerActivity";
 	private static final int BUFFER_SIZE = 512 * 1024;
@@ -73,24 +85,60 @@ public class VideoPlayerActivity extends Activity implements
 	private Button mStartStopButton;
 	private Button mEncoderOptimizationsButton;
 	private Button mEncoderCaptureButton;
-	//private CheckBox mSwDecodeCheckBox;
+	// private CheckBox mSwDecodeCheckBox;
 	private SurfaceView mPreviewSfc;
 	private SurfaceView mDecodeSfc;
-	private SurfaceView mBGVideoView;
 	private LinearLayout mStatsFrame;
 	private Button mDebugLogBtn;
 	private MediaPlayerWrapper mPlayerWrapper;
-	private String[] mSourceList = {
-			"http://192.168.11.2:8080/hls/vod/720p/gopro/gopro.m3u8",
+	private String[] mSourceList =
+	{ 		"http://192.168.11.2:8080/hls/vod/720p/gopro/gopro.m3u8",
 			"http://192.168.11.2:8080/hls/vod/1080p/frozen/frozen.m3u8",
 			"http://192.168.11.2:8080/hls/vod/480p/audi/audi.m3u8"
-			};
+	};
+
+	public static final Sample[] HLSSamples = new Sample[]
+	{
+		new Sample("Apple TS media playlist",
+			"http://192.168.11.2:8080/hls/vod/480p/audi/audi.m3u8",
+			DemoUtil.TYPE_HLS),
+
+		new Sample("Apple master playlist",
+			"http://192.168.11.2:8080/hls/vod/720p/gopro/gopro.m3u8",
+			DemoUtil.TYPE_HLS),
+
+		new Sample(
+			"Apple master playlist advanced",
+			"http://192.168.11.2:8080/hls/vod/1080p/frozen/frozen.m3u8",
+			DemoUtil.TYPE_HLS),
+	};
+	public static final Sample[] MISCSamples = new Sample[]
+	{
+		new Sample("misc",
+			"/storage/external_storage/sdcard1/vp8_720p.webm",
+			DemoUtil.TYPE_OTHER),
+			
+		new Sample("misc",
+			"/storage/external_storage/sdcard1/gopro.mp4",
+			DemoUtil.TYPE_OTHER),
+	};
 	private int mSourceListSize = mSourceList.length;
 	private int mSourceIdx = 0;
 	private String mSource = mSourceList[mSourceIdx];
 	private LocalAudioLoopThread mAudioLoop;
 	private SeekBar mVolumeControl;
 	public static ConditionVariable sCv = new ConditionVariable();
+
+	private VideoSurfaceView surfaceView;
+	private DemoPlayer player;
+	private boolean playerNeedsPrepare;
+
+	private long playerPosition = 0L;
+	private boolean enableBackgroundAudio = true;
+
+	private Uri contentUri;
+	private int contentType;
+	private String contentId;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -118,6 +166,10 @@ public class VideoPlayerActivity extends Activity implements
 
 		loadResources();
 		mAudioLoop = new LocalAudioLoopThread();
+
+//		mPlayerWrapper = new MediaPlayerWrapper(surfaceView,
+//				SystemProperties.get("media.demo.uri",
+//						"/storage/external_storage/sdcard1/vp8_720p.webm"));
 		sCv.close();
 	}
 
@@ -140,7 +192,7 @@ public class VideoPlayerActivity extends Activity implements
 		{
 			mVideoResDialog.dismiss();
 		}
-		if(mPlayerWrapper!=null)
+		if (mPlayerWrapper != null)
 			mPlayerWrapper.stop();
 		super.onPause();
 	}
@@ -153,65 +205,76 @@ public class VideoPlayerActivity extends Activity implements
 	}
 
 	@Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        // TODO Auto-generated method stub
-        Log.d(TAG, "onKeyDown1");
-        if(keyCode==KeyEvent.KEYCODE_BACK){
-            //µ¯³öÈ·¶¨ÍË³ö¶Ô»°¿ò
-            new AlertDialog.Builder(this)
-            .setTitle("ÍË³ö")
-            .setMessage("È·¶¨ÍË³öÂð£¿")
-            .setPositiveButton("È·¶¨", new DialogInterface.OnClickListener() {
-                
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    // TODO Auto-generated method stub
-                    Intent exit = new Intent(Intent.ACTION_MAIN);
-                    exit.addCategory(Intent.CATEGORY_HOME);
-                    exit.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(exit);
-                    System.exit(0);
-                }
-            })
-            .setNegativeButton("È¡Ïû", new DialogInterface.OnClickListener() {
-                
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    // TODO Auto-generated method stub
-                    dialog.cancel();
-                }
-            })
-            .show();
-            //ÕâÀï²»ÐèÒªÖ´ÐÐ¸¸ÀàµÄµã»÷ÊÂ¼þ£¬ËùÒÔÖ±½Óreturn
-            return true;
-        }
-        Log.d(TAG, "onKeyDown2");
-        if(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT) 
-        {
-        	mSourceIdx++;
-        	if (mSourceIdx>=mSourceListSize)
-        		mSourceIdx = 0;
-        	mSource = mSourceList[mSourceIdx];
-        }
-        if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT)
-        {
-        	mSourceIdx--;
-        	if (mSourceIdx<0)
-        		mSourceIdx = mSourceListSize - 1 ;
-        	mSource = mSourceList[mSourceIdx];
-        }
-        if (keyCode==KeyEvent.KEYCODE_DPAD_LEFT || keyCode==KeyEvent.KEYCODE_DPAD_RIGHT)
-        {
-	    	mPlayerWrapper.stop();
-			String source = SystemProperties.get("media.demo.uri", null);
-			if (source == null || source.equals(""))
-				source = mSourceList[mSourceIdx];
-	    	mPlayerWrapper.setmSource(source);
-	    	mPlayerWrapper.start();
-        }
-        //¼ÌÐøÖ´ÐÐ¸¸ÀàµÄÆäËûµã»÷ÊÂ¼þ
-        return super.onKeyDown(keyCode, event);
-    }
+	public boolean onKeyDown(int keyCode, KeyEvent event)
+	{
+		// TODO Auto-generated method stub
+		Log.d(TAG, "onKeyDown1");
+		if (keyCode == KeyEvent.KEYCODE_BACK)
+		{
+			// å¼¹å‡ºç¡®å®šé€€å‡ºå¯¹è¯æ¡†
+			new AlertDialog.Builder(this)
+					.setTitle("é€€å‡º")
+					.setMessage("ç¡®å®šé€€å‡ºå—ï¼Ÿ")
+					.setPositiveButton("ç¡®å®š",
+							new DialogInterface.OnClickListener()
+							{
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which)
+								{
+									// TODO Auto-generated method stub
+									releasePlayer();
+									Intent exit = new Intent(Intent.ACTION_MAIN);
+									exit.addCategory(Intent.CATEGORY_HOME);
+									exit.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+									startActivity(exit);
+									System.exit(0);
+								}
+							})
+					.setNegativeButton("å–æ¶ˆ",
+							new DialogInterface.OnClickListener()
+							{
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which)
+								{
+									// TODO Auto-generated method stub
+									dialog.cancel();
+								}
+							}).show();
+			// è¿™é‡Œä¸éœ€è¦æ‰§è¡Œçˆ¶ç±»çš„ç‚¹å‡»äº‹ä»¶ï¼Œæ‰€ä»¥ç›´æŽ¥return
+			return true;
+		}
+		Log.d(TAG, "onKeyDown2");
+		if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+		{
+			mSourceIdx++;
+			if (mSourceIdx >= mSourceListSize)
+				mSourceIdx = 0;
+			mSource = mSourceList[mSourceIdx];
+		}
+		if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT)
+		{
+			mSourceIdx--;
+			if (mSourceIdx < 0)
+				mSourceIdx = mSourceListSize - 1;
+			mSource = mSourceList[mSourceIdx];
+		}
+		if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+				|| keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+		{
+//			mPlayerWrapper.stop();
+//			String source = SystemProperties.get("media.demo.uri", null);
+//			if (source == null || source.equals(""))
+//				source = mSourceList[mSourceIdx];
+//			mPlayerWrapper.setmSource(source);
+//			mPlayerWrapper.start();
+		}
+		// ç»§ç»­æ‰§è¡Œçˆ¶ç±»çš„å…¶ä»–ç‚¹å‡»äº‹ä»¶
+		return super.onKeyDown(keyCode, event);
+	}
 
 	public VideoDeviceInputImpl getVideoInputDevice()
 	{
@@ -220,75 +283,76 @@ public class VideoPlayerActivity extends Activity implements
 
 	private void loadResources()
 	{
-		mBGVideoView = (SurfaceView) findViewById(R.id.BGVideoSurface);
-		mBGVideoView.getHolder().addCallback(new SurfaceHolder.Callback()
+		contentUri = Uri.parse(MISCSamples[1].uri);
+		contentType = MISCSamples[1].type;
+		contentId = MISCSamples[1].contentId;
+//		contentUri = Uri.parse(MISCSamples[0].uri);
+//		contentType = MISCSamples[0].type;
+//		contentId = MISCSamples[0].contentId;
+
+		surfaceView = (VideoSurfaceView) findViewById(R.id.BGVideoSurface);
+		surfaceView.getHolder().addCallback(new SurfaceHolder.Callback()
 		{
 			@Override
 			public void surfaceCreated(SurfaceHolder holder)
 			{
-				Log.d(TAG, "mBGVideoView surfaceCreated");
+				Log.d(TAG, "surfaceCreated");
+				if (player != null)
+				{
+					player.setSurface(holder.getSurface());
+				}
 			}
 
 			@Override
 			public void surfaceChanged(SurfaceHolder holder, int format,
 					int width, int height)
 			{
-				// Log.d(TAG, "mDecodeSurface surfaceChanged");
-				if (mPlayerWrapper != null)
-				{
-					// Log.d(TAG, "try to start mEncDecThread");
-					mPlayerWrapper.stop();
-				}
-				// if (mResumed)
-				// {
-				// Log.d(TAG, "resuming, try to start a NEW mEncDecThread");
-				String source = SystemProperties.get("media.demo.uri", null);
-				if (source == null || source.equals(""))
-					source = mSourceList[0];
-				Log.d(TAG, "MediaPlayerThread source=" + source);
-				mPlayerWrapper = new MediaPlayerWrapper(mBGVideoView, source);
-				//mPlayerWrapper.start();
-				// }
+				Log.d(TAG, "surfaceChanged");
+				// Do nothing.
 			}
 
 			@Override
 			public void surfaceDestroyed(SurfaceHolder holder)
 			{
-				Log.d(TAG, "mBGVideoView surfaceDestroyed");
+				if (player != null)
+				{
+					player.blockingClearSurface();
+				}
 			}
 		});
 		mVolumeControl = (SeekBar) this.findViewById(R.id.skbVolume);
-		mVolumeControl.setMax(100);// ÒôÁ¿µ÷½ÚµÄ¼«ÏÞ
-		mVolumeControl.setProgress(70);// ÉèÖÃseekbarµÄÎ»ÖÃÖµ
-		
-		mVolumeControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
-		{
-			@Override
-			public void onStopTrackingTouch(SeekBar seekBar)
-			{
-				float vol = (float) (seekBar.getProgress())
-						/ (float) (seekBar.getMax());
-				mAudioLoop.setmMicVolume(vol);// ÉèÖÃÒôÁ¿
-			}
+		mVolumeControl.setMax(100);// éŸ³é‡è°ƒèŠ‚çš„æžé™
+		mVolumeControl.setProgress(70);// è®¾ç½®seekbarçš„ä½ç½®å€¼
 
-			@Override
-			public void onStartTrackingTouch(SeekBar seekBar)
-			{
-				// TODO Auto-generated method stub
-			}
+		mVolumeControl
+				.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+				{
+					@Override
+					public void onStopTrackingTouch(SeekBar seekBar)
+					{
+						float vol = (float) (seekBar.getProgress())
+								/ (float) (seekBar.getMax());
+						mAudioLoop.setmMicVolume(vol);// è®¾ç½®éŸ³é‡
+					}
 
-			@Override
-			public void onProgressChanged(SeekBar seekBar,
-					int progress, boolean fromUser)
-			{
-				// TODO Auto-generated method stub
-			}
-		});
-		
+					@Override
+					public void onStartTrackingTouch(SeekBar seekBar)
+					{
+						// TODO Auto-generated method stub
+					}
+
+					@Override
+					public void onProgressChanged(SeekBar seekBar,
+							int progress, boolean fromUser)
+					{
+						// TODO Auto-generated method stub
+					}
+				});
+
 		mStatsFrame = (LinearLayout) findViewById(R.id.frameStats);
 		mDecodeSfc = (SurfaceView) findViewById(R.id.videoOutput);
 		mPreviewSfc = (SurfaceView) findViewById(R.id.videoInput);
-		//mSwDecodeCheckBox = (CheckBox) findViewById(R.id.checkSwDecode);
+		// mSwDecodeCheckBox = (CheckBox) findViewById(R.id.checkSwDecode);
 
 		mEncoderCaptureButton = (Button) findViewById(R.id.btnEncoderCapture);
 		mEncoderCaptureButton.setText("Start Encoder Capture");
@@ -309,7 +373,8 @@ public class VideoPlayerActivity extends Activity implements
 					{
 						e.printStackTrace();
 					}
-				} else
+				}
+				else
 				{
 					mEncoderCaptureButton.setText("Start Encoder Capture");
 					String text = "Wrote log " + mEncoderCaptureFilename;
@@ -340,7 +405,8 @@ public class VideoPlayerActivity extends Activity implements
 				{
 					mDebugLogBtn.setText("Logging...");
 					Debug.startMethodTracing("videoplayer");
-				} else
+				}
+				else
 				{
 					mDebugLogBtn.setText("Start Logging");
 					Debug.stopMethodTracing();
@@ -374,32 +440,152 @@ public class VideoPlayerActivity extends Activity implements
 				if (mIsStarted == true)
 				{
 					mStartStopButton.setText("Start");
-					//mSwDecodeCheckBox.setClickable(true);
+					// mSwDecodeCheckBox.setClickable(true);
 					stopVideo();
 					mAudioLoop.setRecording(false);
-				} else
+					releasePlayer();
+				}
+				else
 				{
 					mStartStopButton.setText("Stop");
-					//mSwDecodeCheckBox.setClickable(false);
+					// mSwDecodeCheckBox.setClickable(false);
 					showResolutionOptions();
-					mAudioLoop.setRecording(true);
-					Log.d(TAG, "local audio loop started");
-					new Thread(new Runnable(){
-						@Override
-						public void run()
-						{
-							// TODO Auto-generated method stub
-							Log.d(TAG, "wating for sVc to open");
-							sCv.block();
-							Log.d(TAG, "sVc opened");
-							mPlayerWrapper.start();
-						}
-					}).start();
-					mAudioLoop.start();
+
+//					new Thread(new Runnable()
+//					{
+//						@Override
+//						public void run()
+//						{
+//							// TODO Auto-generated method stub
+//							Log.d(TAG, "wating for sCv to open");
+//							mAudioLoop.setRecording(true);
+//							Log.d(TAG, "local audio loop started");
+//							sCv.block();
+//							mAudioLoop.start();
+//							player.setPlayWhenReady(true);
+//							Log.d(TAG, "sCv opened");
+//						}
+//					}).start();
 				}
 				updateStats();
 			}
 		});
+	}
+	private void preparePlayer()
+	{
+		if (player == null)
+		{
+			Log.d(TAG, "Creating DemoPlayer");
+			player = new DemoPlayer(getRendererBuilder());
+			player.addListener(this);
+			//player.setTextListener(this);
+//			player.setMetadataListener(this);
+			player.seekTo(playerPosition);
+			playerNeedsPrepare = true;
+//			mediaController.setMediaPlayer(player.getPlayerControl());
+//			mediaController.setEnabled(true);
+//			eventLogger = new EventLogger();
+//			eventLogger.startSession();
+//			player.addListener(eventLogger);
+//			player.setInfoListener(eventLogger);
+//			player.setInternalErrorListener(eventLogger);
+		}
+		if (playerNeedsPrepare)
+		{
+			Log.d(TAG, "Preparing DemoPlayer");
+			player.prepare();
+			playerNeedsPrepare = false;
+//			updateButtonVisibilities();
+		}
+		player.setSurface(surfaceView.getHolder().getSurface());
+		player.setPlayWhenReady(true);
+	}
+	private void releasePlayer()
+	{
+		if (player != null)
+		{
+			playerPosition = player.getCurrentPosition();
+			player.release();
+			player = null;
+		}
+	}
+	@Override
+	public void onStateChanged(boolean playWhenReady, int playbackState)
+	{
+		if (playbackState == ExoPlayer.STATE_ENDED)
+		{
+//			showControls();
+			player.seekTo(0L);
+			preparePlayer();
+		}
+//		String text = "playWhenReady=" + playWhenReady + ", playbackState=";
+//		switch (playbackState)
+//		{
+//		case ExoPlayer.STATE_BUFFERING:
+//			text += "buffering";
+//			break;
+//		case ExoPlayer.STATE_ENDED:
+//			text += "ended";
+//			break;
+//		case ExoPlayer.STATE_IDLE:
+//			text += "idle";
+//			break;
+//		case ExoPlayer.STATE_PREPARING:
+//			text += "preparing";
+//			break;
+//		case ExoPlayer.STATE_READY:
+//			text += "ready";
+//			break;
+//		default:
+//			text += "unknown";
+//			break;
+//		}
+//		playerStateTextView.setText(text);
+//		updateButtonVisibilities();
+	}
+	@Override
+	public void onError(Exception e)
+	{
+		if (e instanceof UnsupportedDrmException)
+		{
+			// Special case DRM failures.
+			UnsupportedDrmException unsupportedDrmException = (UnsupportedDrmException) e;
+			int stringId = unsupportedDrmException.reason == UnsupportedDrmException.REASON_NO_DRM ? R.string.drm_error_not_supported
+					: unsupportedDrmException.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME ? R.string.drm_error_unsupported_scheme
+							: R.string.drm_error_unknown;
+			Toast.makeText(getApplicationContext(), stringId, Toast.LENGTH_LONG)
+					.show();
+		}
+		playerNeedsPrepare = true;
+//		updateButtonVisibilities();
+//		showControls();
+	}
+	@Override
+	public void onVideoSizeChanged(int width, int height,
+			float pixelWidthAspectRatio)
+	{
+		//shutterView.setVisibility(View.GONE);
+		surfaceView.setVideoWidthHeightRatio(height == 0 ? 1
+				: (width * pixelWidthAspectRatio) / height);
+	}
+	private RendererBuilder getRendererBuilder()
+	{
+		String userAgent = DemoUtil.getUserAgent(this);
+		switch (contentType)
+		{
+		case DemoUtil.TYPE_HLS:
+			Log.d(TAG, "Creating HlsRendererBuilder, uri="+contentUri.toString()+", userAgent="+userAgent+", contentid="+contentId);
+			return new HlsRendererBuilder(
+					userAgent, 
+					contentUri.toString(),
+					contentId);
+		default:
+			Log.d(TAG, "Creating DefaultRendererBuilder");
+			return new DefaultRendererBuilder(
+					this, 
+					contentUri, 
+					null);
+		}
 	}
 
 	public void onEncodedFrame(MediaCodec.BufferInfo info)
@@ -416,7 +602,8 @@ public class VideoPlayerActivity extends Activity implements
 						byte[] out = new byte[mVideoBuffer.remaining()];
 						mVideoBuffer.get(out);
 						mEncoderCaptureStream.write(out);
-					} else
+					}
+					else
 					{
 						mEncoderCaptureStream.write(mVideoBuffer.array());
 					}
@@ -489,6 +676,8 @@ public class VideoPlayerActivity extends Activity implements
 						mVideoFormatInfo.setWidth(fmts[item].width);
 						mVideoFormatInfo.setHeight(fmts[item].height);
 						startVideo();
+						startChatAudio();
+						startBackgroundMovie();
 						mVideoResDialog.dismiss();
 					}
 				});
@@ -506,7 +695,10 @@ public class VideoPlayerActivity extends Activity implements
 		if (!ENCODER_ONLY)
 		{
 			mVideoOutput.setShowView(mDecodeSfc);
-			mVideoOutput.open(mVideoFormatInfo, true/*mSwDecodeCheckBox.isChecked()*/);
+			mVideoOutput.open(mVideoFormatInfo, true/*
+													 * mSwDecodeCheckBox.isChecked
+													 * ()
+													 */);
 			mVideoOutput.start();
 		}
 
@@ -515,6 +707,23 @@ public class VideoPlayerActivity extends Activity implements
 		mVideoInput.start();
 
 		mIsStarted = true;
+	}
+	private void startChatAudio()
+	{
+		mAudioLoop.setRecording(true);
+		Log.d(TAG, "local audio loop started");
+		mAudioLoop.start();
+	}
+	private void startBackgroundMovie()
+	{
+		if (player == null)
+		{
+			preparePlayer();
+		}
+		else if (player != null)
+		{
+			player.setBackgrounded(false);
+		}
 	}
 
 	private void stopVideo()
@@ -550,7 +759,8 @@ public class VideoPlayerActivity extends Activity implements
 
 					addLineToStats("Video Info: " + videoFormat + " at "
 							+ (mVideoFormatInfo.getBitRate() / 1000) + "kbps");
-					String showStats = SystemProperties.get("media.demo.showstats", null);
+					String showStats = SystemProperties.get(
+							"media.demo.showstats", null);
 					if (showStats == null || showStats.equals(""))
 						return;
 					addLineToStats("Time Statistics (camera / endoder / decoder / total):");
@@ -725,7 +935,8 @@ public class VideoPlayerActivity extends Activity implements
 					mNanoTimeStartEnc = currTime;
 				}
 				addNewTag(pts, currTime);
-			} else
+			}
+			else
 			{
 				if (mNanoTimeStartDec == 0)
 				{
@@ -750,7 +961,8 @@ public class VideoPlayerActivity extends Activity implements
 				{
 					removeTag(pts);
 				}
-			} else
+			}
+			else
 			{
 				if ((mPreviousPTS != pts) && (mPreviousPTS != (pts - 10)))
 				{
@@ -952,5 +1164,29 @@ public class VideoPlayerActivity extends Activity implements
 				updateStats();
 			}
 		}
+	}
+
+	public static class Sample
+	{
+
+		public final String name;
+		public final String contentId;
+		public final String uri;
+		public final int type;
+
+		public Sample(String name, String uri, int type)
+		{
+			this(name, name.toLowerCase(Locale.US).replaceAll("\\s", ""), uri,
+					type);
+		}
+
+		public Sample(String name, String contentId, String uri, int type)
+		{
+			this.name = name;
+			this.contentId = contentId;
+			this.uri = uri;
+			this.type = type;
+		}
+
 	}
 }

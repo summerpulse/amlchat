@@ -20,16 +20,14 @@ LOCAL_SRC_FILES := $(call all-java-files-under, src)
 #LOCAL_SDK_VERSION := current
 
 LOCAL_MODULE_TAGS := tests
-LOCAL_PACKAGE_NAME := VideoPlayer
+LOCAL_PACKAGE_NAME := AmlChat
 LOCAL_CERTIFICATE := platform
-#LOCAL_STATIC_JAVA_LIBRARIES := amlogic.subtitle
-
-#LOCAL_REQUIRED_MODULES := libamplayerjni libsubjni
 
 #LOCAL_PROGUARD_ENABLED := disabled
 #LOCAL_PROGUARD_FLAGS := -include $(LOCAL_PATH)/proguard.flags
 
+LOCAL_STATIC_JAVA_LIBRARIES := exoplayerlib
+LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES:=exoplayerlib:libs/exoplayerlib.jar
 include $(BUILD_PACKAGE)
 ##################################################
-
 include $(call all-makefiles-under,$(LOCAL_PATH))
